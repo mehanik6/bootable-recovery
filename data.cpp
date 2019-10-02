@@ -867,9 +867,6 @@ void DataManager::SetDefaultValues()
 		ostringstream defVal;
 		defVal << TW_DEFAULT_BRIGHTNESS;
 		mPersist.SetValue("tw_brightness", defVal.str());
-		TWFunc::Set_Brightness(defVal.str());
-#else
-		TWFunc::Set_Brightness(maxBrightness);
 #endif
 	}
 

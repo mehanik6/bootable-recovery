@@ -3168,6 +3168,7 @@ int TWPartition::Decrypt_Adopted() {
 	int ret = 1;
 	Is_Adopted_Storage = false;
 	string Adopted_Key_File = "";
+	int p;
 
 	if (!Removable)
 		return ret;
@@ -3180,32 +3181,36 @@ int TWPartition::Decrypt_Adopted() {
 	char type_guid[80];
 	char part_guid[80];
 
-	if (gpt_disk_get_partition_info(fd, 2, type_guid, part_guid) == 0) {
-		LOGINFO("type: '%s'\n", type_guid);
-		LOGINFO("part: '%s'\n", part_guid);
-		Adopted_GUID = part_guid;
-		LOGINFO("Adopted_GUID '%s'\n", Adopted_GUID.c_str());
-		if (strcmp(type_guid, TWGptAndroidExpand) == 0) {
-			LOGINFO("android_expand found\n");
-			Adopted_Key_File = "/data/misc/vold/expand_";
-			Adopted_Key_File += part_guid;
-			Adopted_Key_File += ".key";
-			if (TWFunc::Path_Exists(Adopted_Key_File)) {
-				Is_Adopted_Storage = true;
-				/* Until we find a use case for this, I think it is safe
-				 * to disable USB Mass Storage whenever adopted storage
-				 * is present.
-				 */
-				LOGINFO("Detected adopted storage, disabling USB mass storage mode\n");
-				DataManager::SetValue("tw_has_usb_storage", 0);
+	for (p = 2; p <= 3; p++) {
+		if (gpt_disk_get_partition_info(fd, p, type_guid, part_guid) == 0) {
+			LOGINFO("type: '%s'\n", type_guid);
+			LOGINFO("part: '%s'\n", part_guid);
+			Adopted_GUID = part_guid;
+			LOGINFO("Adopted_GUID '%s'\n", Adopted_GUID.c_str());
+			if (strcmp(type_guid, TWGptAndroidExpand) == 0) {
+				LOGINFO("android_expand found\n");
+				Adopted_Key_File = "/data/misc/vold/expand_";
+				Adopted_Key_File += part_guid;
+				Adopted_Key_File += ".key";
+				if (TWFunc::Path_Exists(Adopted_Key_File)) {
+					Is_Adopted_Storage = true;
+					/* Until we find a use case for this, I think it is safe
+					 * to disable USB Mass Storage whenever adopted storage
+					 * is present.
+					 */
+					LOGINFO("Detected adopted storage, disabling USB mass storage mode\n");
+					DataManager::SetValue("tw_has_usb_storage", 0);
+					break;
+				}
 			}
 		}
 	}
 
 	if (Is_Adopted_Storage) {
-		string Adopted_Block_Device = Alternate_Block_Device + "p2";
+		char tempId = static_cast<char>(p + '0');
+		string Adopted_Block_Device = Alternate_Block_Device + "p" + tempId;
 		if (!TWFunc::Path_Exists(Adopted_Block_Device)) {
-			Adopted_Block_Device = Alternate_Block_Device + "2";
+			Adopted_Block_Device = Alternate_Block_Device + tempId;
 			if (!TWFunc::Path_Exists(Adopted_Block_Device)) {
 				LOGINFO("Adopted block device does not exist\n");
 				goto exit;
